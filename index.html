@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Contraseñas Seguras</title>
+    
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de Contraseñas</h1>
+
+        <div class="password-display-container">
+            <span id="password-display">GENERAR...</span>
+            <button id="copy-btn" title="Copiar al portapapeles">📋</button>
+        </div>
+
+        <div class="options">
+            <div class="option slider-container">
+                <label for="length-slider">Longitud:</label>
+                <input type="range" id="length-slider" min="8" max="30" value="16">
+                <span id="password-length">16</span>
+            </div>
+
+            <div class="option">
+                <label>Incluir Mayúsculas (A-Z)</label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="include-uppercase" checked>
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+            
+            <div class="option">
+                <label>Incluir Minúsculas (a-z)</label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="include-lowercase" checked>
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+
+            <div class="option">
+                <label>Incluir Números (0-9)</label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="include-numbers" checked>
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+
+            <div class="option">
+                <label>Incluir Símbolos (!@#$)</label>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="include-symbols">
+                    <span class="checkmark"></span>
+                </label>
+            </div>
+
+            <div class="strength-indicator">
+                <span id="strength-text">Fortaleza</span>
+                <div id="strength-bars">
+                    <div class="strength-bar"></div>
+                    <div class="strength-bar"></div>
+                    <div class="strength-bar"></div>
+                    <div class="strength-bar"></div>
+                </div>
+            </div>
+
+            <button id="generate-btn">Generar Contraseña</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const passwordDisplay = document.getElementById('password-display');
+            const copyBtn = document.getElementById('copy-btn');
+            const lengthSlider = document.getElementById('length-slider');
+            const passwordLength = document.getElementById('password-length');
+            const includeUppercase = document.getElementById('include-uppercase');
+            const includeLowercase = document.getElementById('include-lowercase');
+            const includeNumbers = document.getElementById('include-numbers');
+            const includeSymbols = document.getElementById('include-symbols');
+            const generateBtn = document.getElementById('generate-btn');
+            const strengthText = document.getElementById('strength-text');
+            const strengthBars = document.querySelectorAll('.strength-bar');
+
+            const chars = {
+                uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                lowercase: 'abcdefghijklmnopqrstuvwxyz',
+                numbers: '0123456789',
+                symbols: '!@#$%^&*()_+-=[]{}|;:,.<>?'
+            };
+
+            function generatePassword() {
+                const length = lengthSlider.value;
+                let charset = '';
+                let password = '';
+
+                if (includeUppercase.checked) charset += chars.uppercase;
+                if (includeLowercase.checked) charset += chars.lowercase;
+                if (includeNumbers.checked) charset += chars.numbers;
+                if (includeSymbols.checked) charset += chars.symbols;
+
+                if (charset === '') {
+                    passwordDisplay.textContent = 'SELECCIONA OPCIÓN';
+                    updateStrength(0);
+                    return;
+                }
+
+                for (let i = 0; i < length; i++) {
+                    const randomIndex = Math.floor(Math.random() * charset.length);
+                    password += charset[randomIndex];
+                }
+
+                passwordDisplay.textContent = password;
+                updateStrength();
+            }
+
+            function updateStrength() {
+                const length = lengthSlider.value;
+                let score = 0;
+                if (includeUppercase.checked) score++;
+                if (includeLowercase.checked) score++;
+                if (includeNumbers.checked) score++;
+                if (includeSymbols.checked) score++;
+
+                let strength = (length / 30) * 4 + score;
+                
+                strengthBars.forEach((bar, index) => {
+                    bar.style.backgroundColor = '#444';
+                });
+
+                if (strength <= 3) {
+                    strengthText.textContent = 'Débil';
+                    strengthBars[0].style.backgroundColor = '#f44336'; // Red
+                } else if (strength <= 5) {
+                    strengthText.textContent = 'Media';
+                    strengthBars[0].style.backgroundColor = '#ff9800'; // Orange
+                    strengthBars[1].style.backgroundColor = '#ff9800';
+                } else if (strength <= 7) {
+                    strengthText.textContent = 'Fuerte';
+                    strengthBars[0].style.backgroundColor = '#4caf50'; // Green
+                    strengthBars[1].style.backgroundColor = '#4caf50';
+                    strengthBars[2].style.backgroundColor = '#4caf50';
+                } else {
+                    strengthText.textContent = 'Muy Fuerte';
+                    strengthBars.forEach(bar => bar.style.backgroundColor = '#4caf50'); // Green
+                }
+            }
+
+            lengthSlider.addEventListener('input', () => {
+                passwordLength.textContent = lengthSlider.value;
+                generatePassword();
+            });
+
+            copyBtn.addEventListener('click', () => {
+                if (passwordDisplay.textContent && passwordDisplay.textContent !== 'GENERAR...' && passwordDisplay.textContent !== 'SELECCIONA OPCIÓN') {
+                    navigator.clipboard.writeText(passwordDisplay.textContent)
+                        .then(() => {
+                            copyBtn.textContent = '✅';
+                            setTimeout(() => { copyBtn.textContent = '📋'; }, 2000);
+                        })
+                        .catch(err => console.error('Error al copiar:', err));
+                }
+            });
+
+            generateBtn.addEventListener('click', generatePassword);
+            
+            // Event listeners for checkboxes to regenerate on change
+            [includeUppercase, includeLowercase, includeNumbers, includeSymbols].forEach(el => {
+                el.addEventListener('change', generatePassword);
+            });
+
+            generatePassword();
+        });
+    </script>
+    <script src="sw.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
